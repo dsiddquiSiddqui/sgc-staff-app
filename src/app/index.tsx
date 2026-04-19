@@ -16,6 +16,7 @@ const ALLOWED_HOST = 'digital-id-tau.vercel.app'
 
 export default function HomeScreen() {
   const webViewRef = useRef<WebView>(null)
+
   const [loading, setLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [canGoBack, setCanGoBack] = useState(false)
@@ -34,6 +35,14 @@ export default function HomeScreen() {
     return () => subscription.remove()
   }, [canGoBack])
 
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setLoading(false)
+    }, 10000)
+
+    return () => clearTimeout(timeout)
+  }, [reloadKey])
+
   const handleRetry = () => {
     setHasError(false)
     setLoading(true)
@@ -50,39 +59,27 @@ export default function HomeScreen() {
         <Text style={styles.title}>SGC Staff Portal</Text>
       </View>
 
-      {loading && !hasError && (
-        <View style={styles.loaderOverlay}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.loaderText}>Loading portal...</Text>
-        </View>
-      )}
-
-      {hasError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Unable to load portal</Text>
-          <Text style={styles.errorText}>
-            Please check your internet connection and try again.
-          </Text>
-
-          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
+      <View style={styles.content}>
         <WebView
           key={reloadKey}
           ref={webViewRef}
           source={{ uri: STAFF_PORTAL_URL }}
           style={styles.webview}
           originWhitelist={['*']}
-          javaScriptEnabled
-          domStorageEnabled
-          sharedCookiesEnabled
-          thirdPartyCookiesEnabled
-          startInLoadingState
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          sharedCookiesEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          cacheEnabled={true}
+          setSupportMultipleWindows={false}
           onLoadStart={() => {
             setLoading(true)
             setHasError(false)
+          }}
+          onLoadProgress={({ nativeEvent }) => {
+            if (nativeEvent.progress >= 0.9) {
+              setLoading(false)
+            }
           }}
           onLoadEnd={() => {
             setLoading(false)
@@ -91,17 +88,49 @@ export default function HomeScreen() {
             setLoading(false)
             setHasError(true)
           }}
+          onHttpError={() => {
+            setLoading(false)
+            setHasError(true)
+          }}
           onNavigationStateChange={handleNavigationStateChange}
           onShouldStartLoadWithRequest={(request) => {
             try {
+              if (
+                request.url.startsWith('about:blank') ||
+                request.url.startsWith('data:') ||
+                request.url.startsWith('blob:')
+              ) {
+                return true
+              }
+
               const url = new URL(request.url)
               return url.host === ALLOWED_HOST
             } catch {
-              return false
+              return true
             }
           }}
         />
-      )}
+
+        {loading && !hasError && (
+          <View style={styles.loaderOverlay}>
+            <ActivityIndicator size="large" />
+            <Text style={styles.loaderText}>Loading portal...</Text>
+          </View>
+        )}
+
+        {hasError && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>Unable to load portal</Text>
+            <Text style={styles.errorText}>
+              Please check your internet connection and try again.
+            </Text>
+
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   )
 }
@@ -124,16 +153,19 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
+  content: {
+    flex: 1,
+    position: 'relative',
+  },
   webview: {
     flex: 1,
   },
   loaderOverlay: {
-    position: 'absolute',
-    top: 100,
-    left: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
     zIndex: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   loaderText: {
     marginTop: 10,
@@ -141,10 +173,12 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   errorContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    backgroundColor: '#ffffff',
   },
   errorTitle: {
     fontSize: 22,
