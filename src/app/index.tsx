@@ -1,98 +1,173 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  ActivityIndicator,
+  BackHandler,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { WebView } from 'react-native-webview'
+import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes'
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+const STAFF_PORTAL_URL = 'https://digital-id-tau.vercel.app/staff-login'
+const ALLOWED_HOST = 'digital-id-tau.vercel.app'
 
 export default function HomeScreen() {
+  const webViewRef = useRef<WebView>(null)
+  const [loading, setLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+  const [canGoBack, setCanGoBack] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (canGoBack && webViewRef.current) {
+        webViewRef.current.goBack()
+        return true
+      }
+      return false
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
+    return () => subscription.remove()
+  }, [canGoBack])
+
+  const handleRetry = () => {
+    setHasError(false)
+    setLoading(true)
+    setReloadKey((prev) => prev + 1)
+  }
+
+  const handleNavigationStateChange = (navState: WebViewNavigation) => {
+    setCanGoBack(navState.canGoBack)
+  }
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>SGC Staff Portal</Text>
+      </View>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      {loading && !hasError && (
+        <View style={styles.loaderOverlay}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loaderText}>Loading portal...</Text>
+        </View>
+      )}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+      {hasError ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Unable to load portal</Text>
+          <Text style={styles.errorText}>
+            Please check your internet connection and try again.
+          </Text>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <WebView
+          key={reloadKey}
+          ref={webViewRef}
+          source={{ uri: STAFF_PORTAL_URL }}
+          style={styles.webview}
+          originWhitelist={['*']}
+          javaScriptEnabled
+          domStorageEnabled
+          sharedCookiesEnabled
+          thirdPartyCookiesEnabled
+          startInLoadingState
+          onLoadStart={() => {
+            setLoading(true)
+            setHasError(false)
+          }}
+          onLoadEnd={() => {
+            setLoading(false)
+          }}
+          onError={() => {
+            setLoading(false)
+            setHasError(true)
+          }}
+          onNavigationStateChange={handleNavigationStateChange}
+          onShouldStartLoadWithRequest={(request) => {
+            try {
+              const url = new URL(request.url)
+              return url.host === ALLOWED_HOST
+            } catch {
+              return false
+            }
+          }}
+        />
+      )}
+    </SafeAreaView>
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
+    backgroundColor: '#ffffff',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
+  header: {
+    height: 64,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
   },
   title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  webview: {
+    flex: 1,
+  },
+  loaderOverlay: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  loaderText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#374151',
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
+  errorText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  retryButton: {
+    backgroundColor: '#111827',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
-});
+  retryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+})
