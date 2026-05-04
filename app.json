@@ -6,13 +6,16 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "sgcstaffportal",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/favi.png",
+    "updates": {
+      "enabled": false
+    },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-bg.jpg",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#111111"
@@ -22,7 +25,7 @@
     "android": {
       "package": "com.sgc.staffportal",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/favi.png",
         "backgroundColor": "#111111"
       }
     },
