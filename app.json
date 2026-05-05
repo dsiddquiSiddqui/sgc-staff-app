@@ -15,7 +15,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-bgs.jpg",
+          "image": "./assets/images/splash-bgss.jpg",
           "resizeMode": "cover",
           "backgroundColor": "#000000"
         }
@@ -29,7 +29,10 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "com.sgc.staffportal"
+      "bundleIdentifier": "com.sgc.staffportal",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "web": {
       "bundler": "metro"
