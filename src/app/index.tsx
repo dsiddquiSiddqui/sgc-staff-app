@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Alert,
   BackHandler,
   SafeAreaView,
   StyleSheet,
@@ -10,6 +11,7 @@ import {
 } from 'react-native'
 import { WebView } from 'react-native-webview'
 import type { WebViewNavigation } from 'react-native-webview/lib/WebViewTypes'
+import * as ScreenCapture from 'expo-screen-capture'
 
 const STAFF_PORTAL_URL = 'https://digital-id-tau.vercel.app/staff-login'
 const ALLOWED_HOST = 'digital-id-tau.vercel.app'
@@ -23,6 +25,22 @@ export default function HomeScreen() {
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    ScreenCapture.preventScreenCaptureAsync()
+
+    const screenshotSubscription = ScreenCapture.addScreenshotListener(() => {
+      Alert.alert(
+        'Screenshot detected',
+        'For security reasons, screenshots are not allowed in this app.'
+      )
+    })
+
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync()
+      screenshotSubscription.remove()
+    }
+  }, [])
+
+  useEffect(() => {
     const onBackPress = () => {
       if (canGoBack && webViewRef.current) {
         webViewRef.current.goBack()
@@ -31,7 +49,11 @@ export default function HomeScreen() {
       return false
     }
 
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress)
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    )
+
     return () => subscription.remove()
   }, [canGoBack])
 
@@ -55,10 +77,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>SGC Staff Portal</Text>
-      </View>
-
       <View style={styles.content}>
         <WebView
           key={reloadKey}
@@ -66,11 +84,11 @@ export default function HomeScreen() {
           source={{ uri: STAFF_PORTAL_URL }}
           style={styles.webview}
           originWhitelist={['*']}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-          sharedCookiesEnabled={true}
-          thirdPartyCookiesEnabled={true}
-          cacheEnabled={true}
+          javaScriptEnabled
+          domStorageEnabled
+          sharedCookiesEnabled
+          thirdPartyCookiesEnabled
+          cacheEnabled
           setSupportMultipleWindows={false}
           onLoadStart={() => {
             setLoading(true)
@@ -113,7 +131,7 @@ export default function HomeScreen() {
 
         {loading && !hasError && (
           <View style={styles.loaderOverlay}>
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color="#ffffff" />
             <Text style={styles.loaderText}>Loading portal...</Text>
           </View>
         )}
@@ -138,20 +156,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  header: {
-    height: 64,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
+    backgroundColor: '#111111',
   },
   content: {
     flex: 1,
@@ -159,18 +164,19 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+    backgroundColor: '#111111',
   },
   loaderOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: '#111111',
   },
   loaderText: {
     marginTop: 10,
     fontSize: 14,
-    color: '#374151',
+    color: '#d1d5db',
   },
   errorContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -178,23 +184,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111111',
   },
   errorTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: '#ffffff',
     marginBottom: 8,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
     textAlign: 'center',
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#2563eb',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
