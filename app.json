@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "SGC Digital ID",
-    "slug": "sgc-digital-id",
+    "slug": "sgc-staff-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "scheme": "sgcdigitalid",
+    "scheme": "sgcstaffportal",
     "icon": "./assets/images/favis.png",
     "updates": {
       "enabled": false
@@ -22,14 +22,14 @@
       ]
     ],
     "android": {
-      "package": "com.sgc.digitalid",
+      "package": "com.sgc.staffportal",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/favis.png",
         "backgroundColor": "#111111"
       }
     },
     "ios": {
-      "bundleIdentifier": "com.sgc.digitalid"
+      "bundleIdentifier": "com.sgc.staffportal"
     },
     "web": {
       "bundler": "metro"
