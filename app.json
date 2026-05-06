@@ -15,7 +15,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-bgss.jpeg",
+          "image": "./assets/images/favi.png",
           "resizeMode": "cover",
           "backgroundColor": "#000000"
         }
